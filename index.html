@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STEMScopes Gamified Learning</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: #151b2b;
+            --neon-green: #00ff88;
+            --neon-blue: #00d4ff;
+            --text-main: #e0e6ed;
+            --text-muted: #8b9bb4;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            background: var(--panel-bg);
+            border: 2px solid var(--neon-blue);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        h1, h2, h3 { color: var(--neon-blue); text-align: center; text-transform: uppercase; letter-spacing: 2px; }
+        h2.green { color: var(--neon-green); }
+
+        button {
+            background: transparent;
+            color: var(--neon-green);
+            border: 2px solid var(--neon-green);
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        button:hover {
+            background: var(--neon-green);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--neon-green);
+        }
+        
+        button.blue-btn {
+            color: var(--neon-blue);
+            border-color: var(--neon-blue);
+        }
+        button.blue-btn:hover {
+            background: var(--neon-blue);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        /* Explicit Left Alignment for Inputs */
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #070a10;
+            border: 1px solid var(--neon-blue);
+            color: white;
+            border-radius: 5px;
+            box-sizing: border-box;
+            text-align: left; 
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #070a10;
+            border: 1px solid var(--neon-blue);
+            color: white;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        
+        input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--neon-green); cursor: pointer; }
+
+        .hidden { display: none !important; }
+        
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.4s ease forwards; }
+
+        /* Quiz Layout */
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .option-btn { border-color: var(--text-muted); color: var(--text-main); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 15px;}
+        .option-btn span { text-align: left; width: 100%; line-height: 1.4; }
+        .option-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--neon-blue); color: var(--neon-blue); box-shadow: none; }
+        
+        /* Multiple Select Active State */
+        .option-btn.selected { background: rgba(0, 255, 136, 0.2); border-color: var(--neon-green); color: var(--neon-green); box-shadow: 0 0 10px rgba(0,255,136,0.3); }
+
+        #question-image-display { max-width: 100%; border-radius: 8px; margin-top: 15px; max-height: 250px; object-fit: contain; }
+        .option-img { max-height: 120px; max-width: 100%; border-radius: 5px; }
+        
+        .creator-form-group { border: 1px solid #333; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #0a0d14; }
+        .input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #151b2b; padding: 10px; border-radius: 8px; border: 1px solid #333; }
+        .input-row input[type="text"] { margin: 0; flex-grow: 1; text-align: left; }
+        .input-row input[type="file"] { width: 150px; font-size: 11px; }
+
+        /* Question List Manager Styles */
+        #question-list-container { max-height: 200px; overflow-y: auto; background: #070a10; border: 1px solid #333; border-radius: 5px; padding: 10px; margin-bottom: 15px; }
+        .q-list-item { display: flex; justify-content: space-between; align-items: center; background: #151b2b; padding: 10px; border: 1px solid #333; border-radius: 5px; margin-bottom: 5px; gap: 10px; }
+        .q-list-text { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; text-align: left; }
+        .action-btns { display: flex; gap: 5px; }
+        .action-btns button { margin: 0; padding: 6px 12px; width: auto; font-size: 12px; }
+        .btn-edit { border-color: var(--neon-blue); color: var(--neon-blue); }
+        .btn-edit:hover { background: var(--neon-blue); color: var(--bg-color); }
+        .btn-delete { border-color: #ff4444; color: #ff4444; }
+        .btn-delete:hover { background: #ff4444; color: white; box-shadow: 0 0 10px rgba(255,68,68,0.5); }
+
+        /* Creator Image Previews */
+        .preview-thumb { max-height: 60px; max-width: 100%; border-radius: 4px; display: block; border: 1px solid #333; }
+        .clear-btn { background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 4px 8px; font-size: 10px; border-radius: 4px; cursor: pointer; margin-left: 5px; font-weight: bold; }
+        .clear-btn:hover { background: #ff4444; color: white; }
+
+        /* Modal Styles */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .modal-close { position: absolute; top: 20px; right: 30px; color: var(--text-main); font-size: 40px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+        .modal-close:hover { color: #ff4444; }
+        #modal-image { max-width: 90%; max-height: 90%; border-radius: 10px; border: 2px solid var(--neon-blue); box-shadow: 0 0 30px rgba(0, 212, 255, 0.5); object-fit: contain; }
+        .clickable-img { cursor: zoom-in; transition: transform 0.2s ease; }
+        .clickable-img:hover { transform: scale(1.05); border-color: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+        
+        /* Matching Layout */
+        .match-bank { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #070a10; padding: 15px; border-radius: 8px; border: 1px solid #333; }
+        .match-card { background: #151b2b; padding: 10px; border-radius: 5px; border: 1px solid var(--text-muted); text-align: center; }
+        .match-card span { text-align: left; display: inline-block; }
+        .match-label { font-weight: bold; color: var(--neon-blue); font-size: 18px; margin-bottom: 5px; display: block !important; text-align: center !important; }
+        .key-row { display: flex; justify-content: space-between; align-items: center; background: #151b2b; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--neon-blue); gap: 15px; }
+        .key-content { flex-grow: 1; text-align: left; }
+        .key-row select { width: 120px; font-size: 16px; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <!-- Image Enlarge Modal -->
+    <div id="image-modal" class="modal hidden" onclick="closeModal()">
+        <span class="modal-close">&times;</span>
+        <img id="modal-image" src="" alt="Enlarged Preview">
+    </div>
+
+    <!-- 1. Splash Screen -->
+    <div id="screen-splash" class="container fade-in">
+        <h1>STEMScopes Gateway</h1>
+        <p style="text-align: center; color: var(--text-muted);">Initialize your terminal to begin.</p>
+        
+        <div style="margin-top: 30px;">
+            <button onclick="initStudentMode()">Initialize Student Terminal</button>
+            <p id="load-error" style="color: #ff4444; text-align: center; font-size: 12px;" class="hidden">Cannot auto-fetch JSON. Please upload quiz_data.json manually:</p>
+            <input type="file" id="manual-file-load" accept=".json" class="hidden" style="color: white; margin-top: 10px; width: 100%;">
+        </div>
+        <hr style="border-color: #333; margin: 40px 0;">
+        <button class="blue-btn" onclick="promptTeacherMode()">Teacher Mode</button>
+    </div>
+
+    <!-- 2. Teacher Creator Mode -->
+    <div id="screen-creator" class="container hidden fade-in">
+        <h2 class="green">Quiz Creator Panel</h2>
+        
+        <div style="margin-bottom: 20px; padding: 15px; border: 1px dashed var(--neon-blue); border-radius: 8px;">
+            <label style="color: var(--neon-blue); font-weight: bold; display: block; margin-bottom: 5px;">Edit Existing Quiz (Optional):</label>
+            <input type="file" id="creator-file-load" accept=".json" style="color: white; margin-top: 10px;">
+        </div>
+
+        <select id="creator-scope-select">
+            <option value="Review">Formative Review (No Certification)</option>
+            <option value="Scope 1: Atoms, Molecules, and Mixtures">Scope 1: Atoms, Molecules, and Mixtures</option>
+            <option value="Scope 2: Conservation of Mass">Scope 2: Conservation of Mass</option>
+            <option value="Scope 3: Particle Motion and Arrangement">Scope 3: Particle Motion and Arrangement</option>
+            <option value="Scope 4: Energy in Chemical Reactions">Scope 4: Energy in Chemical Reactions</option>
+            <option value="Scope 5: Anatomy of a Cell">Scope 5: Anatomy of a Cell</option>
+            <option value="Scope 6: Structures of Cells">Scope 6: Structures of Cells</option>
+            <option value="Scope 7: Bodies and Systems">Scope 7: Bodies and Systems</option>
+            <option value="Scope 8: Factors Influencing Growth">Scope 8: Factors Influencing Growth</option>
+            <option value="Scope 9: Sensory Receptors">Scope 9: Sensory Receptors</option>
+            <option value="Scope 10: Cellular Respiration">Scope 10: Cellular Respiration</option>
+            <option value="Scope 11: Introduction to Photosynthesis">Scope 11: Introduction to Photosynthesis</option>
+            <option value="Scope 12: Bioenergetics">Scope 12: Bioenergetics</option>
+            <option value="Scope 13: Genes and Proteins">Scope 13: Genes and Proteins</option>
+            <option value="Scope 14: Mutations">Scope 14: Mutations</option>
+            <option value="Scope 15: Genetics and Reproduction">Scope 15: Genetics and Reproduction</option>
+            <option value="Scope 15.33: Biomaterials Phase 1">Scope 15.33: Biomaterials Phase 1</option>
+            <option value="Scope 15.66: Biomaterials Phase 2">Scope 15.66: Biomaterials Phase 2</option>
+            <option value="Scope 16.0: Biomaterials Phase 3">Scope 16.0: Biomaterials Phase 3</option>
+        </select>
+
+        <div class="creator-form-group">
+            <label style="color: var(--neon-green); font-weight: bold; margin-bottom:10px; display:block;">1. Select Question Format:</label>
+            <p id="edit-warning" class="hidden" style="color: #ffaa00; font-size: 12px; margin-top: 0px; margin-bottom: 10px;">Editing Mode: Previews show currently saved images. Upload a new file to replace, or click 'X' to remove.</p>
+            <select id="q-type-select" onchange="toggleCreatorFormat()">
+                <option value="mcq">Single Answer (Standard Multiple Choice)</option>
+                <option value="msq">Multiple Answers (Select All That Apply)</option>
+                <option value="matching">Matching Pairs</option>
+            </select>
+
+            <hr style="border-color: #333; margin: 15px 0;">
+            <label style="color: var(--neon-green); font-weight: bold;">2. Question Prompt:</label>
+            <input type="text" id="q-text" placeholder="Enter Question Text or Instructions" required>
+            
+            <div style="display: flex; align-items: center; margin-top: 10px; margin-bottom: 5px;">
+                <label style="font-size: 12px; color: var(--text-muted); margin-right: 10px;">Attach Prompt Image (Optional):</label>
+                <button type="button" class="clear-btn" onclick="clearImagePreview('q-image', 'preview-q')">X</button>
+            </div>
+            <input type="file" id="q-image" accept="image/*" style="color: white; margin-bottom: 5px;" onchange="handleImageUpload(event, 'preview-q')">
+            <img id="preview-q" class="preview-thumb hidden clickable-img" onclick="openModal(this.src)" style="margin-bottom: 15px;">
+            
+            <hr style="border-color: #333; margin: 15px 0;">
+            
+            <!-- MULTIPLE CHOICE / SELECT SECTION -->
+            <div id="creator-mcq-section">
+                <label style="color: var(--neon-green); font-weight: bold; display: block; margin-bottom: 10px;">3. Answer Options (Check the correct answers):</label>
+                <div id="mcq-rows-container">
+                    <!-- Dynamic slots injected here via JS -->
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="blue-btn" onclick="addMcqRow()" style="font-size: 12px; padding: 8px;">+ Add Option</button>
+                    <button class="blue-btn" style="border-color: #ff4444; color: #ff4444; font-size: 12px; padding: 8px;" onclick="removeMcqRow()">- Remove Option</button>
+                </div>
+            </div>
+
+            <!-- MATCHING SECTION -->
+            <div id="creator-matching-section" class="hidden">
+                <label style="color: var(--neon-green); font-weight: bold; display: block; margin-bottom: 10px;">3. Matching Pairs (Key & Match):</label>
+                <div id="matching-rows-container">
+                    <!-- Dynamic pairs injected here via JS -->
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="blue-btn" onclick="addMatchRow()" style="font-size: 12px; padding: 8px;">+ Add Pair</button>
+                    <button class="blue-btn" style="border-color: #ff4444; color: #ff4444; font-size: 12px; padding: 8px;" onclick="removeMatchRow()">- Remove Pair</button>
+                </div>
+
+                <hr style="border-color: #333; margin: 15px 0;">
+                <label style="color: var(--neon-green); font-weight: bold; display: block; margin-bottom: 10px;">4. Distractors (Matches without a Key):</label>
+                <div id="distractor-rows-container">
+                    <!-- Dynamic distractors injected here via JS -->
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="blue-btn" onclick="addDistractorRow()" style="font-size: 12px; padding: 8px;">+ Add Distractor</button>
+                    <button class="blue-btn" style="border-color: #ff4444; color: #ff4444; font-size: 12px; padding: 8px;" onclick="removeDistractorRow()">- Remove Distractor</button>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="add-q-btn" onclick="addQuestionToBank()">Add Question to Bank</button>
+                <button id="cancel-edit-btn" class="hidden" style="border-color: #ff4444; color: #ff4444;" onclick="cancelEdit()">Cancel Edit</button>
+            </div>
+        </div>
+        
+        <p style="text-align: center; margin-bottom: 5px;">Questions in Bank: <span id="q-counter" style="color: var(--neon-green); font-weight: bold; font-size: 20px;">0</span></p>
+        
+        <div id="question-list-container">
+            <p style="text-align: center; color: var(--text-muted); font-size: 12px; margin: 0;">No questions loaded.</p>
+        </div>
+
+        <button onclick="exportQuizFile()">Export quiz_data.json</button>
+        <button class="blue-btn" style="border-color: #ff4444; color: #ff4444; margin-top: 10px;" onclick="location.reload()">Exit Creator</button>
+    </div>
+
+    <!-- 3. Student Quiz Mode -->
+    <div id="screen-quiz" class="container hidden fade-in">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); align-items: center;">
+            <span id="quiz-scope-display">Scope: Loading...</span>
+            <span id="question-progress">Question 1/X</span>
+        </div>
+        <hr style="border-color: #333;">
+        
+        <h2 id="question-text" style="text-transform: none; margin-bottom: 5px; text-align: left; line-height: 1.4;">Question Text Here</h2>
+        <p id="question-instruction" style="text-align: left; color: var(--neon-blue); font-size: 14px; margin-top: 5px;" class="hidden"></p>
+
+        <div style="text-align: center;"><img id="question-image-display" src="" style="display: none;" class="clickable-img" onclick="openModal(this.src)"></div>
+        
+        <!-- Dynamic Target for Answer Options / Matching Grid -->
+        <div id="student-interactive-area" style="margin-top: 20px;"></div>
+        
+        <!-- Generic Submit Button for Multiple Choice & Matching -->
+        <button id="student-submit-btn" class="hidden" onclick="processStudentSubmit()">Submit Answer</button>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="blue-btn" style="border-color: #ff4444; color: #ff4444; width: auto; font-size: 12px; padding: 8px 16px;" onclick="location.reload()">Exit Early</button>
+        </div>
+    </div>
+
+    <!-- 4. Results & Certificate Screen -->
+    <div id="screen-results" class="container hidden fade-in">
+        <h1 id="result-title">Analysis Complete</h1>
+        <h2 id="result-score" class="green">Accuracy: 100%</h2>
+        <p id="result-message" style="text-align: center; font-size: 18px;"></p>
+        
+        <div id="certificate-section" class="hidden">
+            <hr style="border-color: #333; margin: 20px 0;">
+            <h3 style="color: var(--neon-blue);">Certification Earned</h3>
+            <input type="text" id="cert-name" placeholder="Enter Full Name for Certificate">
+            <button onclick="downloadCertificate()">Download Certificate</button>
+        </div>
+        <button class="blue-btn" onclick="location.reload()" style="margin-top: 20px;">Return to Main Menu</button>
+    </div>
+
+    <canvas id="certCanvas" width="1000" height="700" class="hidden"></canvas>
+
+    <script>
+        // === GLOBAL DATA STATE ===
+        let quizData = { scope: "", isReview: false, questions: [] };
+        let creatorQuestions = [];
+        let currentQuestionIndex = 0;
+        let floatScore = 0.0;
+        let editingIndex = -1;
+        
+        // Dynamic Creator Variables
+        const MAX_MCQ = 8;
+        const MAX_MATCH = 8;
+        const MAX_DIST = 4;
+        let activeMcq = 4;
+        let activeMatch = 4;
+        let activeDist = 0;
+
+        // Student Variables
+        let currentSelectedMulti = [];
+        let currentMatchingKeys = [];
+        
+        // === AUDIO && MODAL ===
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playBeep(freq, type, duration) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = type;
+            oscillator.frequency.value = freq;
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            oscillator.stop(audioCtx.currentTime + duration);
+        }
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function openModal(src) {
+            if (!src) return;
+            document.getElementById('modal-image').src = src;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+        function closeModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+            document.getElementById('modal-image').src = "";
+        }
+        function showScreen(id) {
+            document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        // === TEACHER CREATOR INITIALIZATION ===
+        function promptTeacherMode() {
+            const pw = prompt("Enter Teacher Access Code:");
+            if (pw === "Dragons#1") {
+                buildCreatorDOM();
+                showScreen('screen-creator');
+            } else if (pw !== null) alert("Access Denied.");
+        }
+
+        function buildCreatorDOM() {
+            const mcqContainer = document.getElementById('mcq-rows-container');
+            mcqContainer.innerHTML = '';
+            for(let i=1; i<=MAX_MCQ; i++) {
+                mcqContainer.innerHTML += `
+                    <div id="mcq-row-${i}" class="input-row ${i > activeMcq ? 'hidden' : ''}">
+                        <input type="checkbox" id="mcq-chk-${i}" title="Mark Correct">
+                        <input type="text" id="mcq-txt-${i}" placeholder="Option ${i}">
+                        <input type="file" id="mcq-file-${i}" accept="image/*" onchange="handleImageUpload(event, 'mcq-prev-${i}')">
+                        <button type="button" class="clear-btn" onclick="clearImagePreview('mcq-file-${i}', 'mcq-prev-${i}')">X</button>
+                        <img id="mcq-prev-${i}" class="preview-thumb hidden clickable-img" onclick="openModal(this.src)" style="margin-left: 10px;">
+                    </div>`;
+            }
+            const matchContainer = document.getElementById('matching-rows-container');
+            matchContainer.innerHTML = '';
+            for(let i=1; i<=MAX_MATCH; i++) {
+                matchContainer.innerHTML += `
+                    <div id="match-row-${i}" class="input-row ${i > activeMatch ? 'hidden' : ''}" style="flex-wrap: wrap;">
+                        <span style="color:var(--text-muted); font-weight:bold;">#${i}</span>
+                        <input type="text" id="match-key-txt-${i}" placeholder="Key Text" style="width: 30%;">
+                        <input type="file" id="match-key-file-${i}" accept="image/*" onchange="handleImageUpload(event, 'match-key-prev-${i}')">
+                        <button type="button" class="clear-btn" onclick="clearImagePreview('match-key-file-${i}', 'match-key-prev-${i}')">X</button>
+                        <img id="match-key-prev-${i}" class="preview-thumb hidden clickable-img" onclick="openModal(this.src)">
+                        <span style="color:var(--neon-green);">➔</span>
+                        <input type="text" id="match-val-txt-${i}" placeholder="Match Text" style="width: 30%;">
+                        <input type="file" id="match-val-file-${i}" accept="image/*" onchange="handleImageUpload(event, 'match-val-prev-${i}')">
+                        <button type="button" class="clear-btn" onclick="clearImagePreview('match-val-file-${i}', 'match-val-prev-${i}')">X</button>
+                        <img id="match-val-prev-${i}" class="preview-thumb hidden clickable-img" onclick="openModal(this.src)">
+                    </div>`;
+            }
+            const distContainer = document.getElementById('distractor-rows-container');
+            distContainer.innerHTML = '';
+            for(let i=1; i<=MAX_DIST; i++) {
+                distContainer.innerHTML += `
+                    <div id="dist-row-${i}" class="input-row ${i > activeDist ? 'hidden' : ''}">
+                        <input type="text" id="dist-txt-${i}" placeholder="Distractor Text">
+                        <input type="file" id="dist-file-${i}" accept="image/*" onchange="handleImageUpload(event, 'dist-prev-${i}')">
+                        <button type="button" class="clear-btn" onclick="clearImagePreview('dist-file-${i}', 'dist-prev-${i}')">X</button>
+                        <img id="dist-prev-${i}" class="preview-thumb hidden clickable-img" onclick="openModal(this.src)" style="margin-left: 10px;">
+                    </div>`;
+            }
+        }
+
+        function toggleCreatorFormat() {
+            const type = document.getElementById('q-type-select').value;
+            if (type === 'mcq' || type === 'msq') {
+                document.getElementById('creator-mcq-section').classList.remove('hidden');
+                document.getElementById('creator-matching-section').classList.add('hidden');
+            } else {
+                document.getElementById('creator-mcq-section').classList.add('hidden');
+                document.getElementById('creator-matching-section').classList.remove('hidden');
+            }
+        }
+
+        function addMcqRow() { if(activeMcq < MAX_MCQ) { activeMcq++; document.getElementById(`mcq-row-${activeMcq}`).classList.remove('hidden'); } }
+        function removeMcqRow() { if(activeMcq > 2) { document.getElementById(`mcq-row-${activeMcq}`).classList.add('hidden'); resetMcqRow(activeMcq); activeMcq--; } }
+        function addMatchRow() { if(activeMatch < MAX_MATCH) { activeMatch++; document.getElementById(`match-row-${activeMatch}`).classList.remove('hidden'); } }
+        function removeMatchRow() { if(activeMatch > 2) { document.getElementById(`match-row-${activeMatch}`).classList.add('hidden'); resetMatchRow(activeMatch); activeMatch--; } }
+        function addDistractorRow() { if(activeDist < MAX_DIST) { activeDist++; document.getElementById(`dist-row-${activeDist}`).classList.remove('hidden'); } }
+        function removeDistractorRow() { if(activeDist > 0) { document.getElementById(`dist-row-${activeDist}`).classList.add('hidden'); resetDistRow(activeDist); activeDist--; } }
+
+        function resetMcqRow(i) {
+            document.getElementById(`mcq-chk-${i}`).checked = false;
+            document.getElementById(`mcq-txt-${i}`).value = '';
+            clearImagePreview(`mcq-file-${i}`, `mcq-prev-${i}`);
+        }
+        function resetMatchRow(i) {
+            document.getElementById(`match-key-txt-${i}`).value = '';
+            document.getElementById(`match-val-txt-${i}`).value = '';
+            clearImagePreview(`match-key-file-${i}`, `match-key-prev-${i}`);
+            clearImagePreview(`match-val-file-${i}`, `match-val-prev-${i}`);
+        }
+        function resetDistRow(i) {
+            document.getElementById(`dist-txt-${i}`).value = '';
+            clearImagePreview(`dist-file-${i}`, `dist-prev-${i}`);
+        }
+
+        function handleImageUpload(event, previewId) {
+            const file = event.target.files[0];
+            const previewEl = document.getElementById(previewId);
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => { previewEl.src = e.target.result; previewEl.classList.remove('hidden'); };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function clearImagePreview(inputId, previewId) {
+            if(document.getElementById(inputId)) document.getElementById(inputId).value = "";
+            const previewEl = document.getElementById(previewId);
+            if(previewEl) {
+                previewEl.removeAttribute('src');
+                previewEl.classList.add('hidden');
+            }
+        }
+        
+        function setPreviewImage(previewId, data) {
+            const el = document.getElementById(previewId);
+            if(data) { el.src = data; el.classList.remove('hidden'); } 
+            else { el.removeAttribute('src'); el.classList.add('hidden'); }
+        }
+
+        function getPreviewData(previewId) {
+            const el = document.getElementById(previewId);
+            return (el.classList.contains('hidden') || !el.getAttribute('src')) ? null : el.getAttribute('src');
+        }
+
+        // Question Management / Edit System
+        document.getElementById('creator-file-load').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const loadedData = JSON.parse(event.target.result);
+                    creatorQuestions = loadedData.questions || [];
+                    document.getElementById('creator-scope-select').value = loadedData.scope || "Review";
+                    renderQuestionManager();
+                    cancelEdit();
+                    alert("Quiz data loaded! Questions added to bank.");
+                } catch(err) { alert("Error: Invalid JSON."); }
+            };
+            reader.readAsText(file);
+        });
+
+        function renderQuestionManager() {
+            const container = document.getElementById('question-list-container');
+            container.innerHTML = '';
+            document.getElementById('q-counter').innerText = creatorQuestions.length;
+            if (creatorQuestions.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); font-size: 12px; margin: 0;">No questions loaded.</p>';
+                return;
+            }
+            creatorQuestions.forEach((q, index) => {
+                const item = document.createElement('div');
+                item.className = 'q-list-item';
+                const typeLabel = q.type === 'mcq' ? '[Single]' : q.type === 'msq' ? '[Multi]' : '[Match]';
+                item.innerHTML = `<span class="q-list-text">${index + 1}. ${typeLabel} ${q.question}</span>
+                                  <div class="action-btns">
+                                      <button class="btn-edit" onclick="editQuestion(${index})">Edit</button>
+                                      <button class="btn-delete" onclick="deleteQuestion(${index})">Delete</button>
+                                  </div>`;
+                container.appendChild(item);
+            });
+        }
+        
+        function deleteQuestion(index) {
+            if(confirm("Remove this question?")) { 
+                if(editingIndex === index) cancelEdit();
+                creatorQuestions.splice(index, 1); 
+                renderQuestionManager(); 
+            }
+        }
+
+        function editQuestion(index) {
+            editingIndex = index;
+            const q = creatorQuestions[index];
+            
+            document.getElementById('q-type-select').value = q.type || 'mcq';
+            toggleCreatorFormat();
+            
+            document.getElementById('q-text').value = q.question;
+            setPreviewImage('preview-q', q.image);
+            document.getElementById('q-image').value = "";
+
+            if (q.type === 'mcq' || q.type === 'msq') {
+                activeMcq = Math.max(2, q.options.length);
+                for(let i=1; i<=MAX_MCQ; i++) {
+                    const row = document.getElementById(`mcq-row-${i}`);
+                    if (i <= activeMcq) {
+                        row.classList.remove('hidden');
+                        const opt = q.options[i-1] || { text: '', isCorrect: false, img: null };
+                        document.getElementById(`mcq-txt-${i}`).value = opt.text || '';
+                        document.getElementById(`mcq-chk-${i}`).checked = opt.isCorrect || false;
+                        setPreviewImage(`mcq-prev-${i}`, opt.img);
+                        document.getElementById(`mcq-file-${i}`).value = "";
+                    } else {
+                        row.classList.add('hidden');
+                        resetMcqRow(i);
+                    }
+                }
+            } else if (q.type === 'matching') {
+                activeMatch = Math.max(2, q.pairs.length);
+                for(let i=1; i<=MAX_MATCH; i++) {
+                    const row = document.getElementById(`match-row-${i}`);
+                    if (i <= activeMatch) {
+                        row.classList.remove('hidden');
+                        const p = q.pairs[i-1] || { key: '', keyImg: null, match: '', matchImg: null };
+                        document.getElementById(`match-key-txt-${i}`).value = p.key || '';
+                        document.getElementById(`match-val-txt-${i}`).value = p.match || '';
+                        setPreviewImage(`match-key-prev-${i}`, p.keyImg);
+                        setPreviewImage(`match-val-prev-${i}`, p.matchImg);
+                        document.getElementById(`match-key-file-${i}`).value = "";
+                        document.getElementById(`match-val-file-${i}`).value = "";
+                    } else {
+                        row.classList.add('hidden');
+                        resetMatchRow(i);
+                    }
+                }
+                
+                activeDist = q.distractors ? q.distractors.length : 0;
+                for(let i=1; i<=MAX_DIST; i++) {
+                    const row = document.getElementById(`dist-row-${i}`);
+                    if (i <= activeDist) {
+                        row.classList.remove('hidden');
+                        const d = q.distractors[i-1] || { match: '', matchImg: null };
+                        document.getElementById(`dist-txt-${i}`).value = d.match || '';
+                        setPreviewImage(`dist-prev-${i}`, d.matchImg);
+                        document.getElementById(`dist-file-${i}`).value = "";
+                    } else {
+                        row.classList.add('hidden');
+                        resetDistRow(i);
+                    }
+                }
+            }
+
+            document.getElementById('add-q-btn').innerText = "Update Question";
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+            document.getElementById('edit-warning').classList.remove('hidden');
+            document.getElementById('screen-creator').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            editingIndex = -1;
+            document.getElementById('q-text').value = '';
+            clearImagePreview('q-image', 'preview-q');
+            
+            // Reset to defaults
+            activeMcq = 4; activeMatch = 4; activeDist = 0;
+            for(let i=1; i<=MAX_MCQ; i++) { 
+                resetMcqRow(i); 
+                document.getElementById(`mcq-row-${i}`).classList.toggle('hidden', i > activeMcq); 
+            }
+            for(let i=1; i<=MAX_MATCH; i++) { 
+                resetMatchRow(i); 
+                document.getElementById(`match-row-${i}`).classList.toggle('hidden', i > activeMatch); 
+            }
+            for(let i=1; i<=MAX_DIST; i++) { 
+                resetDistRow(i); 
+                document.getElementById(`dist-row-${i}`).classList.toggle('hidden', i > activeDist); 
+            }
+
+            document.getElementById('add-q-btn').innerText = "Add Question to Bank";
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            document.getElementById('edit-warning').classList.add('hidden');
+        }
+
+        function addQuestionToBank() {
+            const text = document.getElementById('q-text').value;
+            const type = document.getElementById('q-type-select').value;
+            if(!text) return alert("Question text is required.");
+
+            let newQ = { type: type, question: text, image: getPreviewData('preview-q'), options: [], pairs: [], distractors: [] };
+
+            if (type === 'mcq' || type === 'msq') {
+                let hasCorrect = false;
+                for(let i=1; i<=activeMcq; i++) {
+                    const oTxt = document.getElementById(`mcq-txt-${i}`).value;
+                    const oImg = getPreviewData(`mcq-prev-${i}`);
+                    const oChk = document.getElementById(`mcq-chk-${i}`).checked;
+                    if(oTxt || oImg) {
+                        newQ.options.push({ id: i, text: oTxt, img: oImg, isCorrect: oChk });
+                        if (oChk) hasCorrect = true;
+                    }
+                }
+                if(newQ.options.length < 2) return alert("Provide at least 2 options.");
+                if(!hasCorrect) return alert("Select at least one correct option.");
+            } else {
+                for(let i=1; i<=activeMatch; i++) {
+                    const kTxt = document.getElementById(`match-key-txt-${i}`).value;
+                    const kImg = getPreviewData(`match-key-prev-${i}`);
+                    const mTxt = document.getElementById(`match-val-txt-${i}`).value;
+                    const mImg = getPreviewData(`match-val-prev-${i}`);
+                    if((kTxt || kImg) && (mTxt || mImg)) {
+                        newQ.pairs.push({ id: i, key: kTxt, keyImg: kImg, match: mTxt, matchImg: mImg });
+                    }
+                }
+                for(let i=1; i<=activeDist; i++) {
+                    const dTxt = document.getElementById(`dist-txt-${i}`).value;
+                    const dImg = getPreviewData(`dist-prev-${i}`);
+                    if(dTxt || dImg) {
+                        newQ.distractors.push({ id: `d${i}`, match: dTxt, matchImg: dImg });
+                    }
+                }
+                if(newQ.pairs.length < 2) return alert("Provide at least 2 matching pairs.");
+            }
+
+            if (editingIndex > -1) {
+                creatorQuestions[editingIndex] = newQ;
+            } else {
+                creatorQuestions.push(newQ);
+            }
+            
+            cancelEdit(); 
+            renderQuestionManager();
+        }
+
+        function exportQuizFile() {
+            if(creatorQuestions.length === 0) return alert("Add questions first.");
+            const scopeVal = document.getElementById('creator-scope-select').value;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                scope: scopeVal, isReview: (scopeVal === "Review"), questions: creatorQuestions
+            }));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "quiz_data.json");
+            dlAnchorElem.click();
+        }
+
+        // === STUDENT MODE ===
+        async function initStudentMode() {
+            playBeep(440, 'sine', 0.1);
+            try {
+                const response = await fetch('quiz_data.json');
+                if(!response.ok) throw new Error("File not found");
+                quizData = await response.json();
+                startQuiz();
+            } catch (error) {
+                document.getElementById('load-error').classList.remove('hidden');
+                document.getElementById('manual-file-load').classList.remove('hidden');
+                document.getElementById('manual-file-load').addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = function(event) { quizData = JSON.parse(event.target.result); startQuiz(); };
+                    reader.readAsText(file);
+                });
+            }
+        }
+
+        function startQuiz() {
+            document.getElementById('quiz-scope-display').innerText = `Current Data: ${quizData.scope}`;
+            if (quizData.questions && quizData.questions.length > 0) shuffleArray(quizData.questions);
+            currentQuestionIndex = 0;
+            floatScore = 0.0;
+            showScreen('screen-quiz');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = quizData.questions[currentQuestionIndex];
+            document.getElementById('question-progress').innerText = `Question ${currentQuestionIndex + 1}/${quizData.questions.length}`;
+            document.getElementById('question-text').innerText = q.question;
+            
+            const instructionEl = document.getElementById('question-instruction');
+            instructionEl.classList.remove('hidden');
+            if(q.type === 'msq') instructionEl.innerText = "Select ALL that apply, then click Submit.";
+            else if(q.type === 'matching') instructionEl.innerText = "Select the correct letter from the dropdown to match each item, then click Submit.";
+            else instructionEl.classList.add('hidden');
+
+            const imgEl = document.getElementById('question-image-display');
+            if(q.image) { imgEl.src = q.image; imgEl.style.display = 'inline-block'; } 
+            else { imgEl.removeAttribute('src'); imgEl.style.display = 'none'; }
+
+            const targetArea = document.getElementById('student-interactive-area');
+            const submitBtn = document.getElementById('student-submit-btn');
+            targetArea.innerHTML = '';
+            submitBtn.classList.add('hidden');
+            currentSelectedMulti = [];
+
+            if (q.type === 'mcq' || q.type === 'msq') {
+                const grid = document.createElement('div');
+                grid.className = 'options-grid';
+                let opts = [...q.options];
+                shuffleArray(opts);
+
+                opts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    let content = ``;
+                    if(opt.text) content += `<span>${opt.text}</span>`;
+                    if (opt.img) content += `<img src="${opt.img}" class="option-img clickable-img">`;
+                    btn.innerHTML = content;
+                    
+                    btn.onclick = (e) => {
+                        if(e.target.tagName.toLowerCase() === 'img') { e.stopPropagation(); openModal(e.target.src); return; }
+                        playBeep(600, 'square', 0.05);
+                        
+                        if(q.type === 'mcq') {
+                            processScoreLogic([opt.id]);
+                        } else {
+                            if (currentSelectedMulti.includes(opt.id)) {
+                                currentSelectedMulti = currentSelectedMulti.filter(id => id !== opt.id);
+                                btn.classList.remove('selected');
+                            } else {
+                                currentSelectedMulti.push(opt.id);
+                                btn.classList.add('selected');
+                            }
+                        }
+                    };
+                    grid.appendChild(btn);
+                });
+                targetArea.appendChild(grid);
+                if(q.type === 'msq') submitBtn.classList.remove('hidden');
+            
+            } else if (q.type === 'matching') {
+                currentMatchingKeys = [];
+                let allMatches = q.pairs.map(p => ({ id: p.id, text: p.match, img: p.matchImg }));
+                if (q.distractors) q.distractors.forEach(d => allMatches.push({ id: d.id, text: d.match, img: d.matchImg }));
+                shuffleArray(allMatches);
+
+                const bankContainer = document.createElement('div');
+                bankContainer.className = 'match-bank';
+                const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                
+                allMatches.forEach((m, idx) => {
+                    const letter = alphabet[idx];
+                    m.letter = letter; 
+                    let cardHtml = `<span class="match-label">${letter}</span>`;
+                    if(m.text) cardHtml += `<span>${m.text}</span>`;
+                    if(m.img) cardHtml += `<br><img src="${m.img}" class="option-img clickable-img" onclick="openModal(this.src)">`;
+                    const card = document.createElement('div');
+                    card.className = 'match-card';
+                    card.innerHTML = cardHtml;
+                    bankContainer.appendChild(card);
+                });
+                targetArea.appendChild(bankContainer);
+
+                let allKeys = [...q.pairs];
+                shuffleArray(allKeys);
+
+                allKeys.forEach((k, idx) => {
+                    currentMatchingKeys.push(k.id);
+                    const row = document.createElement('div');
+                    row.className = 'key-row';
+                    
+                    let kHtml = `<div class="key-content">`;
+                    if(k.key) kHtml += `<span>${k.key}</span>`;
+                    if(k.keyImg) kHtml += `<br><img src="${k.keyImg}" class="option-img clickable-img" onclick="openModal(this.src)">`;
+                    kHtml += `</div>`;
+                    
+                    let selectHtml = `<select id="match-sel-${k.id}"><option value="">--</option>`;
+                    allMatches.forEach(m => { selectHtml += `<option value="${m.id}">${m.letter}</option>`; });
+                    selectHtml += `</select>`;
+                    
+                    row.innerHTML = kHtml + selectHtml;
+                    targetArea.appendChild(row);
+                });
+                submitBtn.classList.remove('hidden');
+            }
+        }
+
+        function processStudentSubmit() {
+            playBeep(700, 'square', 0.1);
+            const q = quizData.questions[currentQuestionIndex];
+            if (q.type === 'msq') {
+                processScoreLogic(currentSelectedMulti);
+            } else if (q.type === 'matching') {
+                let userAnswers = {};
+                currentMatchingKeys.forEach(kId => {
+                    userAnswers[kId] = document.getElementById(`match-sel-${kId}`).value;
+                });
+                processScoreLogic(userAnswers);
+            }
+        }
+
+        function processScoreLogic(userAnswerData) {
+            const q = quizData.questions[currentQuestionIndex];
+            let points = 0.0;
+
+            if (q.type === 'mcq') {
+                const correctOpt = q.options.find(o => o.isCorrect);
+                if (correctOpt && userAnswerData[0] === correctOpt.id) points = 1.0;
+            } 
+            else if (q.type === 'msq') {
+                const correctIds = q.options.filter(o => o.isCorrect).map(o => o.id);
+                let correctCount = 0; let incorrectCount = 0;
+                userAnswerData.forEach(id => {
+                    if (correctIds.includes(id)) correctCount++;
+                    else incorrectCount++;
+                });
+                points = Math.max(0, (correctCount / correctIds.length) - (incorrectCount / correctIds.length));
+            } 
+            else if (q.type === 'matching') {
+                let correctMatches = 0;
+                q.pairs.forEach(p => {
+                    if (userAnswerData[p.id] == p.id) correctMatches++; 
+                });
+                points = correctMatches / q.pairs.length;
+            }
+
+            floatScore += points;
+            currentQuestionIndex++;
+            
+            if (currentQuestionIndex < quizData.questions.length) loadQuestion();
+            else calculateResults();
+        }
+
+        function calculateResults() {
+            showScreen('screen-results');
+            const percent = (floatScore / quizData.questions.length) * 100;
+            const passed = percent >= 90;
+            
+            document.getElementById('result-score').innerText = `Final Accuracy: ${percent.toFixed(0)}%`;
+            
+            if (quizData.isReview) {
+                document.getElementById('result-title').innerText = "Formative Review Complete";
+                document.getElementById('result-message').innerText = "Review data processed. No certification logic applied.";
+                playBeep(300, 'sine', 0.5);
+                return;
+            }
+
+            if (passed) {
+                playBeep(880, 'sine', 0.2); setTimeout(()=>playBeep(1100, 'sine', 0.4), 200);
+                document.getElementById('result-title').innerText = "Certification Authorized";
+                const rankInfo = progressionLogic[quizData.scope] || { title: "Graduate" };
+                
+                document.getElementById('result-message').innerHTML = `Mastery achieved in <br><strong>${quizData.scope}</strong><br><br>You have been promoted to:<br><span style="color:var(--neon-green); font-size: 24px; font-weight:bold;">${rankInfo.title}</span>`;
+                document.getElementById('certificate-section').classList.remove('hidden');
+            } else {
+                playBeep(200, 'sawtooth', 0.5);
+                document.getElementById('result-title').innerText = "Certification Failed";
+                document.getElementById('result-title').style.color = "#ff4444";
+                document.getElementById('result-score').style.color = "#ff4444";
+                document.getElementById('result-message').innerText = "90% accuracy is required for certification. Review your materials and initialize a new assessment.";
+            }
+        }
+
+        // Progression Map
+        const progressionLogic = {
+            "Scope 1: Atoms, Molecules, and Mixtures": { title: "Associate Technician" },
+            "Scope 2: Conservation of Mass": { title: "Matter Specialist" },
+            "Scope 3: Particle Motion and Arrangement": { title: "Senior Operations Analyst" },
+            "Scope 4: Energy in Chemical Reactions": { title: "Lead Matter Analyst" },
+            "Scope 5: Anatomy of a Cell": { title: "Cell Anatomy Analyst" },
+            "Scope 6: Structures of Cells": { title: "Cytology Specialist" },
+            "Scope 7: Bodies and Systems": { title: "Systems Physiologist" },
+            "Scope 8: Factors Influencing Growth": { title: "Development Tracker" },
+            "Scope 9: Sensory Receptors": { title: "Lead Organism Investigator" },
+            "Scope 10: Cellular Respiration": { title: "Respiration Technician" },
+            "Scope 11: Introduction to Photosynthesis": { title: "Photosynthesis Analyst" },
+            "Scope 12: Bioenergetics": { title: "Lead Bioenergetics Expert" },
+            "Scope 13: Genes and Proteins": { title: "Genetic Decoder" },
+            "Scope 14: Mutations": { title: "Mutation Investigator" },
+            "Scope 15: Genetics and Reproduction": { title: "Master Life Scientist" },
+            "Scope 15.33: Biomaterials Phase 1": { title: "Apprentice Bioengineer" },
+            "Scope 15.66: Biomaterials Phase 2": { title: "Journeyman Bioengineer" },
+            "Scope 16.0: Biomaterials Phase 3": { title: "Biomaterials Engineer" }
+        };
+
+        function downloadCertificate() {
+            const studentName = document.getElementById('cert-name').value;
+            if(!studentName) return alert("Enter your name to generate the certificate.");
+
+            const canvas = document.getElementById('certCanvas');
+            const ctx = canvas.getContext('2d');
+            const rankInfo = progressionLogic[quizData.scope] || { title: "Graduate" };
+
+            // Background
+            ctx.fillStyle = "#0b0f19"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "#00d4ff"; ctx.lineWidth = 10; ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+            ctx.strokeStyle = "#00ff88"; ctx.lineWidth = 4; ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+
+            // Text
+            ctx.textAlign = "center";
+            ctx.fillStyle = "#00d4ff"; ctx.font = "bold 40px Arial"; ctx.fillText("CERTIFICATE OF MASTERY", canvas.width/2, 120);
+            ctx.fillStyle = "#8b9bb4"; ctx.font = "italic 20px Arial"; ctx.fillText("This certifies that", canvas.width/2, 180);
+            ctx.fillStyle = "#ffffff"; ctx.font = "bold 60px Arial"; ctx.fillText(studentName, canvas.width/2, 260);
+            ctx.fillStyle = "#8b9bb4"; ctx.font = "18px Arial"; ctx.fillText("has successfully demonstrated 90% or higher accuracy and achieved mastery over:", canvas.width/2, 330);
+            ctx.fillStyle = "#e0e6ed"; ctx.font = "bold 30px Arial"; ctx.fillText(quizData.scope, canvas.width/2, 390);
+            ctx.fillStyle = "#8b9bb4"; ctx.font = "italic 20px Arial"; ctx.fillText("and is hereby promoted to the official rank of:", canvas.width/2, 470);
+            ctx.fillStyle = "#00ff88"; ctx.font = "bold 45px Arial"; ctx.fillText(rankInfo.title, canvas.width/2, 540);
+            ctx.fillStyle = "#8b9bb4"; ctx.font = "14px Arial"; ctx.fillText(`Date Achieved: ${new Date().toLocaleDateString()}`, canvas.width/2, 630);
+
+            const safeName = studentName.replace(/\s+/g, '_');
+            const safeScope = quizData.scope.replace(/[:.,]/g, '').replace(/\s+/g, '_');
+            const link = document.createElement('a');
+            link.download = `${safeName}_${safeScope}_Certificate.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>
