@@ -311,13 +311,23 @@
         <h2 id="result-score" class="green">Accuracy: 100%</h2>
         <p id="result-message" style="text-align: center; font-size: 18px;"></p>
         
-        <div id="certificate-section" class="hidden">
+        <div id="certificate-input-section" class="hidden">
             <hr style="border-color: #333; margin: 20px 0;">
             <h3 style="color: var(--neon-blue);">Certification Earned</h3>
             <input type="text" id="cert-name" placeholder="Enter Full Name for Certificate">
-            <button onclick="downloadCertificate()">Download Certificate</button>
+            <button onclick="generateCertificate()">Generate Certificate</button>
         </div>
-        <button class="blue-btn" onclick="location.reload()" style="margin-top: 20px;">Return to Main Menu</button>
+
+        <div id="certificate-display-section" class="hidden" style="text-align: center; margin-top: 20px;">
+            <p style="color: var(--neon-green); font-weight: bold; font-size: 18px;">Your Certificate is ready!</p>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;">Mobile Users: Long-press the image below to "Save to Photos" or take a screenshot.<br>Desktop Users: Click the download button below.</p>
+            
+            <img id="cert-image-display" style="max-width: 100%; border: 2px solid var(--neon-blue); border-radius: 8px; box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);">
+            
+            <button class="blue-btn" onclick="triggerDownload()" style="margin-top: 20px;">Download File</button>
+        </div>
+
+        <button class="blue-btn" onclick="location.reload()" style="margin-top: 20px; border-color: #ff4444; color: #ff4444;">Return to Main Menu</button>
     </div>
 
     <canvas id="certCanvas" width="1000" height="700" class="hidden"></canvas>
@@ -894,7 +904,7 @@
                 const rankInfo = progressionLogic[quizData.scope] || { title: "Graduate" };
                 
                 document.getElementById('result-message').innerHTML = `Mastery achieved in <br><strong>${quizData.scope}</strong><br><br>You have been promoted to:<br><span style="color:var(--neon-green); font-size: 24px; font-weight:bold;">${rankInfo.title}</span>`;
-                document.getElementById('certificate-section').classList.remove('hidden');
+                document.getElementById('certificate-input-section').classList.remove('hidden');
             } else {
                 playBeep(200, 'sawtooth', 0.5);
                 document.getElementById('result-title').innerText = "Certification Failed";
@@ -926,7 +936,8 @@
             "Scope 16.0: Biomaterials Phase 3": { title: "Biomaterials Engineer" }
         };
 
-        function downloadCertificate() {
+        // Mobile-Friendly Rendering Method
+        function generateCertificate() {
             const studentName = document.getElementById('cert-name').value;
             if(!studentName) return alert("Enter your name to generate the certificate.");
 
@@ -950,11 +961,25 @@
             ctx.fillStyle = "#00ff88"; ctx.font = "bold 45px Arial"; ctx.fillText(rankInfo.title, canvas.width/2, 540);
             ctx.fillStyle = "#8b9bb4"; ctx.font = "14px Arial"; ctx.fillText(`Date Achieved: ${new Date().toLocaleDateString()}`, canvas.width/2, 630);
 
+            // Render to Image Tag for Mobile Users
+            const dataUrl = canvas.toDataURL('image/png');
+            document.getElementById('cert-image-display').src = dataUrl;
+            
+            // Swap UI
+            document.getElementById('certificate-input-section').classList.add('hidden');
+            document.getElementById('certificate-display-section').classList.remove('hidden');
+        }
+
+        // Desktop Download Method
+        function triggerDownload() {
+            const dataUrl = document.getElementById('cert-image-display').src;
+            const studentName = document.getElementById('cert-name').value;
             const safeName = studentName.replace(/\s+/g, '_');
             const safeScope = quizData.scope.replace(/[:.,]/g, '').replace(/\s+/g, '_');
+            
             const link = document.createElement('a');
             link.download = `${safeName}_${safeScope}_Certificate.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.href = dataUrl;
             link.click();
         }
     </script>
