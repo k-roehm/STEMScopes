@@ -105,6 +105,16 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.4s ease forwards; }
 
+        /* Mute Button Styles */
+        .mute-btn { background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; width: auto; margin-top: 0; text-transform: uppercase; letter-spacing: 1px; }
+        .mute-btn:hover { border-color: var(--text-main); color: var(--text-main); background: transparent; box-shadow: none; }
+        .mute-btn.muted { border-color: #ff4444; color: #ff4444; }
+        .mute-btn.muted:hover { border-color: #ff4444; color: #ff4444; background: rgba(255,68,68,0.1); }
+
+        /* Progress Bar Styles */
+        .progress-container { width: 100%; background: #070a10; border: 1px solid #333; border-radius: 8px; margin: 10px 0; height: 8px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--neon-blue); width: 0%; transition: width 0.4s ease; box-shadow: 0 0 8px var(--neon-blue); }
+
         /* Quiz Layout */
         .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
         .option-btn { border-color: var(--text-muted); color: var(--text-main); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 15px;}
@@ -166,6 +176,9 @@
 
     <!-- 1. Splash Screen -->
     <div id="screen-splash" class="container fade-in">
+        <div style="text-align: right; margin-bottom: -10px;">
+            <button class="mute-btn" onclick="toggleMute()">Audio: ON</button>
+        </div>
         <h1>STEMScopes Gateway</h1>
         <p style="text-align: center; color: var(--text-muted);">Initialize your terminal to begin.</p>
         
@@ -283,11 +296,18 @@
 
     <!-- 3. Student Quiz Mode -->
     <div id="screen-quiz" class="container hidden fade-in">
-        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); align-items: center;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); align-items: center; margin-bottom: 8px;">
             <span id="quiz-scope-display">Scope: Loading...</span>
-            <span id="question-progress">Question 1/X</span>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="mute-btn" onclick="toggleMute()">Audio: ON</button>
+                <span id="question-progress">Question 1/X</span>
+            </div>
         </div>
-        <hr style="border-color: #333;">
+        
+        <div class="progress-container">
+            <div id="quiz-progress-bar" class="progress-fill"></div>
+        </div>
+        <hr style="border-color: #333; margin-top: 10px;">
         
         <h2 id="question-text" style="text-transform: none; margin-bottom: 5px; text-align: left; line-height: 1.4;">Question Text Here</h2>
         <p id="question-instruction" style="text-align: left; color: var(--neon-blue); font-size: 14px; margin-top: 5px;" class="hidden"></p>
@@ -352,9 +372,25 @@
         let currentSelectedMulti = [];
         let currentMatchingKeys = [];
         
-        // === AUDIO && MODAL ===
+        // === AUDIO, MODAL & UTILS ===
+        let isAudioMuted = false;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function toggleMute() {
+            isAudioMuted = !isAudioMuted;
+            document.querySelectorAll('.mute-btn').forEach(btn => {
+                if(isAudioMuted) {
+                    btn.classList.add('muted');
+                    btn.innerText = "Audio: OFF";
+                } else {
+                    btn.classList.remove('muted');
+                    btn.innerText = "Audio: ON";
+                }
+            });
+        }
+
         function playBeep(freq, type, duration) {
+            if(isAudioMuted) return;
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
@@ -737,7 +773,11 @@
 
         function loadQuestion() {
             const q = quizData.questions[currentQuestionIndex];
+            
             document.getElementById('question-progress').innerText = `Question ${currentQuestionIndex + 1}/${quizData.questions.length}`;
+            const progressPercent = (currentQuestionIndex / quizData.questions.length) * 100;
+            document.getElementById('quiz-progress-bar').style.width = `${progressPercent}%`;
+
             document.getElementById('question-text').innerText = q.question;
             
             const instructionEl = document.getElementById('question-instruction');
@@ -885,6 +925,7 @@
         }
 
         function calculateResults() {
+            document.getElementById('quiz-progress-bar').style.width = `100%`;
             showScreen('screen-results');
             const percent = (floatScore / quizData.questions.length) * 100;
             const passed = percent >= 90;
